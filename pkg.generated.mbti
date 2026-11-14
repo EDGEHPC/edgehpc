@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "edgehpc/edgehpc"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn inspect_snapshot(StringView) -> @json.Json raise
+
+// Errors
+pub suberror SnapshotError {
+  InvalidSnapshot(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits
