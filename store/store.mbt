@@ -4,6 +4,7 @@
 pub suberror StoreError {
   LimitExceeded
   InvalidFile(String)
+  AlreadyRunning
 }
 
 ///|
@@ -12,13 +13,35 @@ pub struct Directory {
 }
 
 ///|
-/// Use one advisory lock for each state directory, including between processes.
-/// The caller must keep the directory private. Never hold this lock over network I/O.
-pub async fn[X] transaction(path : String, body : async (Directory) -> X) -> X {
+async fn prepare_directory(path : String) -> Unit {
   @fs.mkdir(path, permission=0o700, allow_exist=true)
   guard @fs.kind(path, follow_symlink=false) is Directory else {
     raise InvalidFile(path)
   }
+}
+
+///|
+/// Exclude other node workers for this directory while still allowing status
+/// readers and short state transactions. The OS releases the lease on exit.
+pub async fn[X] with_worker(path : String, run : async () -> X) -> X {
+  prepare_directory(path)
+  let lease = @fs.open(
+    path + "/.worker",
+    mode=ReadWrite,
+    create_mode=OpenOrCreate,
+    permission=0o600,
+  )
+  defer lease.close()
+  guard lease.try_lock(Exclusive) else { raise AlreadyRunning }
+  defer lease.unlock()
+  run()
+}
+
+///|
+/// Use one advisory lock for each state directory, including between processes.
+/// The caller must keep the directory private. Never hold this lock over network I/O.
+pub async fn[X] transaction(path : String, body : async (Directory) -> X) -> X {
+  prepare_directory(path)
   let lock = @fs.open(
     path + "/.lock",
     mode=ReadWrite,
@@ -34,6 +57,7 @@ pub async fn[X] transaction(path : String, body : async (Directory) -> X) -> X {
 ///|
 /// Read at most limit bytes from a streaming request or an open file.
 pub async fn read_bounded(reader : &@io.BinaryReader, limit : Int32) -> String {
+  guard limit >= 0 else { raise LimitExceeded }
   let buf = Buffer()
   let chunk = FixedArray::make(8192, b'\x00')
   for ;; {

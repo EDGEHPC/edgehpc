@@ -12,10 +12,13 @@ pub async fn read_file(String, Int32) -> String
 
 pub async fn[X] transaction(String, async (Directory) -> X) -> X
 
+pub async fn[X] with_worker(String, async () -> X) -> X
+
 // Errors
 pub suberror StoreError {
   LimitExceeded
   InvalidFile(String)
+  AlreadyRunning
 }
 
 // Types and methods

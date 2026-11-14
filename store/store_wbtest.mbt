@@ -34,3 +34,23 @@ async test "an interrupted staging file cannot replace the committed record" {
     assert_eq(dir.read("record", 40), Some("replacement"))
   })
 }
+
+///|
+async test "a second worker cannot race while short state transactions still work" {
+  let path = @fs.tmpdir(prefix="edgehpc-worker")
+  defer @fs.rmdir(path, recursive=true)
+  with_worker(path, () => {
+    let blocked = try {
+      with_worker(path, () => ())
+      false
+    } catch {
+      AlreadyRunning => true
+      _ => false
+    }
+    assert_true(blocked)
+    transaction(path, dir => dir.write("record", "first", 20))
+  })
+  with_worker(path, () => {
+    transaction(path, dir => assert_eq(dir.read("record", 20), Some("first")))
+  })
+}
