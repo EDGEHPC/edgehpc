@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "edgehpc/edgehpc/store"
+
+import {
+  "moonbitlang/core/async/io",
+}
+
+// Values
+pub async fn read_bounded(&@io.BinaryReader, Int32) -> String
+
+pub async fn read_file(String, Int32) -> String
+
+pub async fn[X] transaction(String, async (Directory) -> X) -> X
+
+// Errors
+pub suberror StoreError {
+  LimitExceeded
+  InvalidFile(String)
+}
+
+// Types and methods
+pub struct Directory {
+  path : String
+}
+pub async fn Directory::read(Self, String, Int32) -> String?
+pub async fn Directory::sync(Self) -> Unit
+pub async fn Directory::write(Self, String, String, Int32) -> Unit
+
+// Type aliases
+
+// Traits
