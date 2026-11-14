@@ -92,12 +92,14 @@ pub async fn serve(
   guard !addr.is_ipv6() && address.has_prefix("127.0.0.1:") else {
     raise LoopbackRequired
   }
-  let server = @http.Server(addr, reuse_addr=true)
+  let server = @socket.TcpServer(addr, reuse_addr=true)
   defer server.close()
   ready(server.addr.to_string())
-  server.run_forever(allow_failure=true, max_connections=64, (request, reply) => {
+  server.run_forever(allow_failure=true, max_connections=64, (socket, _) => {
+    let reply = @http.ServerConnection::new(socket)
     defer reply.close()
     @async.with_timeout(5000, () => {
+      let request = reply.read_request()
       route(root, keys, request, reply) catch {
         @controller.Conflict | @controller.UnknownTask =>
           respond(reply, 409, "Conflict", { "error": "conflict" })
