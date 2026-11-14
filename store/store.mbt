@@ -144,6 +144,10 @@ pub async fn Directory::write(
   defer @fs.remove(tmp, allow_missing=true)
   file.write(data[:])
   file.sync()
-  @fs.rename(tmp, path)
-  self.sync()
+  // No transport timeout can interrupt a successful rename before syncing its
+  // directory. A real storage failure still propagates to the caller.
+  @async.protect_from_cancel(() => {
+    @fs.rename(tmp, path)
+    self.sync()
+  })
 }
