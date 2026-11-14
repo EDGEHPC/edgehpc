@@ -199,7 +199,7 @@ pub async fn tick(
     }
     let task_completed = state.inbox is Some(_)
     let result = match state.inbox {
-      Some(task) => Some(task.execute(sample, finished_at_ms))
+      Some(task) => Some(task.execute(sample, finished_at_ms, policy~))
       None => state.result
     }
     if new_sample || task_completed {

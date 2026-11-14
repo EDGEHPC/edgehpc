@@ -237,6 +237,10 @@ def restart_and_replay(lab):
     assert final["tasks"][0]["result"]["readings"] == {
         "temperatures_millicelsius": {"soc": 42000}, "data_available_bytes": "500",
     }
+    assert {
+        entry["rule_id"]: entry["status"]
+        for entry in final["tasks"][0]["result"]["checks"]
+    } == {"soc-hot": "within_range", "data-low": "within_range"}
     assert len({entry["event_id"] for entry in final["alerts"]}) == len(final["alerts"]) == 2
     assert [entry["observed"] for entry in final["alerts"]] == ["10", "81000"]
     print("PASS: targeted dispatch, offline execution, sustained evidence, restart, bad ACK and deduplicated replay")

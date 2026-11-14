@@ -58,6 +58,7 @@ pub struct TaskResult {
   collected_at_ms : Int64?
   finished_at_ms : Int64
   readings : Json
+  checks : Json
 }
 
 ///|
@@ -66,6 +67,7 @@ pub fn Task::execute(
   self : Task,
   snapshot : Snapshot?,
   finished_at_ms : Int64,
+  policy? : Policy,
 ) -> TaskResult {
   match snapshot {
     Some(s) =>
@@ -77,6 +79,7 @@ pub fn Task::execute(
         collected_at_ms: Some(s.epoch_ms),
         finished_at_ms,
         readings: readings_json(s.temperatures, s.data_available_bytes),
+        checks: policy.map(p => task_checks(p, s)).unwrap_or(Json::array([])),
       }
     None =>
       {
@@ -87,6 +90,7 @@ pub fn Task::execute(
         collected_at_ms: None,
         finished_at_ms,
         readings: Json::null(),
+        checks: Json::array([]),
       }
   }
 }
@@ -124,6 +128,7 @@ pub fn TaskResult::payload(self : TaskResult) -> Json {
       None => Json::null()
     },
     "readings": self.readings,
+    "checks": self.checks,
     "error": if self.successful {
       Json::null()
     } else {
@@ -158,7 +163,7 @@ fn validate_readings(value : Json) -> Unit raise {
 ///|
 pub fn task_result_from_json(value : Json) -> TaskResult raise {
   guard value is Object(fields) &&
-    fields.length() == 11 &&
+    fields.length() == 12 &&
     fields.get("schema_version") is Some(Number(1.0, ..)) &&
     fields.get("event_id") is Some(String(id)) &&
     fields.get("task_id") is Some(String(task_id)) &&
@@ -167,6 +172,7 @@ pub fn task_result_from_json(value : Json) -> TaskResult raise {
     valid_id(node_id) &&
     fields.get("kind") is Some(String("health_check_result")) &&
     fields.get("status") is Some(String(status)) &&
+    fields.get("checks") is Some(checks) &&
     fields.get("finished_at_ms").bind(parse_signed_decimal)
     is Some(finished_at_ms) &&
     finished_at_ms >= 0L &&
@@ -188,6 +194,7 @@ pub fn task_result_from_json(value : Json) -> TaskResult raise {
         raise InvalidResult
       }
       validate_readings(readings)
+      validate_task_checks(checks, readings)
       {
         task_id,
         node_id,
@@ -196,12 +203,14 @@ pub fn task_result_from_json(value : Json) -> TaskResult raise {
         collected_at_ms: Some(collected_at_ms),
         finished_at_ms,
         readings,
+        checks,
       }
     }
     ("failed", Some(Null), Some(Null), Some(String("snapshot_unavailable"))) if fields.get(
         "collected_at_ms",
       )
-      is Some(Null) =>
+      is Some(Null) &&
+      checks is Array([]) =>
       {
         task_id,
         node_id,
@@ -210,6 +219,7 @@ pub fn task_result_from_json(value : Json) -> TaskResult raise {
         collected_at_ms: None,
         finished_at_ms,
         readings: Json::null(),
+        checks,
       }
     _ => raise InvalidResult
   }
