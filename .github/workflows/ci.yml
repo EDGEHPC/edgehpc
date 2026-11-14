@@ -64,4 +64,4 @@ jobs:
       - name: Verify offline execution and acknowledged replay
         run: |
           moon build --target native cmd/edgehpc
-          python3 tests/e2e.py "$PWD/_build/native/debug/build/cmd/edgehpc/edgehpc.exe"
+          python3 tests/e2e.py --native-tls "$PWD/_build/native/debug/build/cmd/edgehpc/edgehpc.exe"
