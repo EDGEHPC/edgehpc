@@ -8,12 +8,21 @@ import {
 // Values
 pub fn inspect_snapshot(StringView) -> @json.Json raise
 
+pub fn parse_snapshot(StringView) -> Snapshot raise
+
 // Errors
 pub suberror SnapshotError {
   InvalidSnapshot(String)
 }
 
 // Types and methods
+pub(all) struct Snapshot {
+  boot_id : String
+  monotonic_ms : Int64
+  epoch_ms : Int64
+  temperatures : Map[String, Int64]
+  data_available_bytes : Int64?
+}
 
 // Type aliases
 
