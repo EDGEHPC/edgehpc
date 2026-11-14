@@ -12,4 +12,4 @@ keywords = [ "arm64", "edge-computing", "telemetry" ]
 
 preferred_target = "wasm"
 
-description = "Local health inspection for ARM Linux edge nodes."
+description = "Dispatch and run offline-capable health checks on ARM Linux edge nodes."
