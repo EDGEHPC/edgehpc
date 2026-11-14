@@ -6,15 +6,26 @@ import {
 }
 
 // Values
+pub fn acknowledgement(String) -> @json.Json
+
 pub fn inspect_snapshot(StringView) -> @json.Json raise
+
+pub fn parse_event(StringView) -> Event raise
 
 pub fn parse_policy(StringView) -> Policy raise
 
 pub fn parse_snapshot(StringView) -> Snapshot raise
 
+pub fn verify_acknowledgement(StringView, String) -> Unit raise
+
 // Errors
 pub suberror PolicyError {
   InvalidPolicy(String)
+}
+
+pub suberror ProtocolError {
+  InvalidEvent
+  InvalidAcknowledgement
 }
 
 pub suberror SnapshotError {
@@ -31,6 +42,13 @@ pub fn Cursor::equal(Self, Self) -> Bool
 pub fn Cursor::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn Cursor::not_equal(Self, Self) -> Bool
 pub fn Cursor::to_json(Self) -> @json.Json
+
+pub struct Event {
+  id : String
+  finding : Finding
+}
+pub fn Event::from_finding(Finding) -> Self
+pub fn Event::payload(Self) -> @json.Json
 
 pub(all) struct Finding {
   node_id : String
