@@ -21,6 +21,38 @@ test "only the implemented health check is a valid remotely assigned task" {
 }
 
 ///|
+test "a dispatched check evaluates node-local policy without changing alert streaks" {
+  let policy = parse_policy(policy_json(thermal_rule + "," + disk_rule))
+  let task = Task::health_check("site-visit", "lab-a")
+  let sample = reading(1L, Some(81000L))
+  let result = task.execute(Some(sample), sample.epoch_ms, policy~)
+  assert_true(
+    parse_task_result(result.payload().stringify()).checks
+    is [
+      {
+        "rule_id": String("hot"),
+        "status": String("out_of_range"),
+        "observed": String("81000"),
+        ..
+      },
+      {
+        "rule_id": String("disk"),
+        "status": String("unknown"),
+        "observed": Null,
+        ..
+      },
+    ],
+  )
+  let altered = result
+    .payload()
+    .stringify()
+    .replace(old="out_of_range", new="within_range")
+  assert_true((Some(parse_task_result(altered)) catch { _ => None }) is None)
+  let (_, sustained) = Monitor().advance(policy, sample)
+  assert_true(sustained.is_empty())
+}
+
+///|
 test "edge task results distinguish successful inspection from missing data" {
   let task = Task::health_check("sample-1", "lab-a")
   let sample = reading(3L, Some(82222L), bytes=Some(9007199254740993L))

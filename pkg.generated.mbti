@@ -144,7 +144,7 @@ pub struct Task {
   id : String
   node_id : String
 }
-pub fn Task::execute(Self, Snapshot?, Int64) -> TaskResult
+pub fn Task::execute(Self, Snapshot?, Int64, policy? : Policy) -> TaskResult
 pub fn Task::health_check(String, String) -> Self raise
 pub fn Task::payload(Self) -> @json.Json
 
@@ -156,6 +156,7 @@ pub struct TaskResult {
   collected_at_ms : Int64?
   finished_at_ms : Int64
   readings : @json.Json
+  checks : @json.Json
 }
 pub fn TaskResult::delivery_id(Self) -> String
 pub fn TaskResult::payload(Self) -> @json.Json

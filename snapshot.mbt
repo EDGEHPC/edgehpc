@@ -100,11 +100,15 @@ pub fn parse_snapshot(source : StringView) -> Snapshot raise {
       "missing or invalid boot_id, monotonic_seconds, or epoch",
     )
   }
+  let temperatures = snapshot_temperatures(fields)
+  guard temperatures.length() <= 256 else {
+    raise InvalidSnapshot("more than 256 temperature sensors")
+  }
   {
     boot_id,
     monotonic_ms,
     epoch_ms,
-    temperatures: snapshot_temperatures(fields),
+    temperatures,
     data_available_bytes: snapshot_available(fields),
   }
 }
