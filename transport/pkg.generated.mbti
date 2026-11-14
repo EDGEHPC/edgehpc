@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "edgehpc/edgehpc/transport"
+
+import {
+  "edgehpc/edgehpc",
+}
+
+// Values
+pub fn parse_credentials(StringView) -> Credentials raise
+
+pub async fn serve(String, Credentials, String, ready? : (String) -> Unit) -> Unit
+
+// Errors
+pub suberror ConfigurationError {
+  InvalidNodeCredentials
+  InvalidControllerOrigin
+}
+
+pub suberror ListenError {
+  LoopbackRequired
+}
+
+pub suberror TransportError {
+  ResponseStatus(Int32)
+  UnexpectedTask
+}
+
+// Types and methods
+pub struct Client {
+  origin : String
+  node_id : String
+  timeout_ms : Int32
+  // private fields
+}
+pub fn Client::Client(String, String, String, timeout_ms? : Int32) -> Self raise
+pub async fn Client::pull(Self) -> @edgehpc.Task?
+pub async fn Client::send(Self, @edgehpc.Delivery) -> Unit
+
+pub struct Credentials {
+  // private fields
+}
+pub fn Credentials::accepts(Self, String, String?) -> Bool
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,15 @@
+import {
+  "edgehpc/edgehpc" @model,
+  "edgehpc/edgehpc/controller",
+  "edgehpc/edgehpc/store",
+  "moonbitlang/core/async",
+  "moonbitlang/core/async/http",
+  "moonbitlang/core/async/socket",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/json",
+  "moonbitlang/core/string",
+}
+
+options(
+  "allow-experimental-packages": true,
+)
