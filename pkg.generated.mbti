@@ -8,14 +8,45 @@ import {
 // Values
 pub fn inspect_snapshot(StringView) -> @json.Json raise
 
+pub fn parse_policy(StringView) -> Policy raise
+
 pub fn parse_snapshot(StringView) -> Snapshot raise
 
 // Errors
+pub suberror PolicyError {
+  InvalidPolicy(String)
+}
+
 pub suberror SnapshotError {
   InvalidSnapshot(String)
 }
 
 // Types and methods
+#derive(Eq)
+pub(all) enum Metric {
+  Temperature(String)
+  DataAvailable
+}
+pub fn Metric::equal(Self, Self) -> Bool
+pub fn Metric::not_equal(Self, Self) -> Bool
+
+pub(all) struct Policy {
+  node_id : String
+  queue_capacity : Int32
+  rules : Array[Rule]
+}
+
+#derive(Eq)
+pub(all) struct Rule {
+  id : String
+  metric : Metric
+  threshold : Int64
+  consecutive : Int32
+  max_gap_ms : Int64
+}
+pub fn Rule::equal(Self, Self) -> Bool
+pub fn Rule::not_equal(Self, Self) -> Bool
+
 pub(all) struct Snapshot {
   boot_id : String
   monotonic_ms : Int64
