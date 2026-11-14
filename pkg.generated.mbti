@@ -22,6 +22,28 @@ pub suberror SnapshotError {
 }
 
 // Types and methods
+#derive(Eq, @json.FromJson, @json.ToJson)
+pub(all) struct Cursor {
+  boot_id : String
+  monotonic_ms : Int64
+}
+pub fn Cursor::equal(Self, Self) -> Bool
+pub fn Cursor::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Cursor::not_equal(Self, Self) -> Bool
+pub fn Cursor::to_json(Self) -> @json.Json
+
+pub(all) struct Finding {
+  node_id : String
+  rule_id : String
+  metric : Metric
+  threshold : Int64
+  observed : Int64
+  consecutive : Int32
+  since_ms : Int64
+  sample : Cursor
+  occurred_at_ms : Int64
+}
+
 #derive(Eq)
 pub(all) enum Metric {
   Temperature(String)
@@ -29,6 +51,16 @@ pub(all) enum Metric {
 }
 pub fn Metric::equal(Self, Self) -> Bool
 pub fn Metric::not_equal(Self, Self) -> Bool
+
+#derive(@json.FromJson, @json.ToJson)
+pub struct Monitor {
+  cursor : Cursor?
+  progress : Map[String, RuleProgress]
+}
+pub fn Monitor::Monitor() -> Self
+pub fn Monitor::advance(Self, Policy, Snapshot) -> (Self, Array[Finding])
+pub fn Monitor::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Monitor::to_json(Self) -> @json.Json
 
 pub(all) struct Policy {
   node_id : String
@@ -46,6 +78,16 @@ pub(all) struct Rule {
 }
 pub fn Rule::equal(Self, Self) -> Bool
 pub fn Rule::not_equal(Self, Self) -> Bool
+
+#derive(@json.FromJson, @json.ToJson)
+pub struct RuleProgress {
+  policy_key : String
+  count : Int32
+  since_ms : Int64
+  latched : Bool
+}
+pub fn RuleProgress::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn RuleProgress::to_json(Self) -> @json.Json
 
 pub(all) struct Snapshot {
   boot_id : String
