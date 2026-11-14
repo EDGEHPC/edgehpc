@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import secrets
 import socket
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -93,10 +94,11 @@ class Lab:
             ],
         })
 
-    def run(self, *args, ok=True):
-        proc = subprocess.run([*self.cli, *map(str, args)], capture_output=True, text=True, timeout=8)
-        if not ok:
-            return proc
+    def run(self, *args, env=None):
+        proc = subprocess.run(
+            [*self.cli, *map(str, args)], capture_output=True, text=True,
+            timeout=8, env=env,
+        )
         assert proc.returncode == 0, (args, proc.returncode, proc.stdout, proc.stderr)
         return json.loads(proc.stdout)
 
@@ -125,8 +127,8 @@ class Lab:
             assert proc.poll() is None
             yield
 
-    def sync(self, origin=None):
-        return self.run("node", "sync", self.state, self.policy, origin or self.origin, self.token)
+    def sync(self, origin=None, *, env=None):
+        return self.run("node", "sync", self.state, self.policy, origin or self.origin, self.token, env=env)
 
     def node_status(self):
         return self.run("node", "status", self.state, NODE_ID)
@@ -171,11 +173,19 @@ def bad_ack():
         def log_message(self, *_):
             pass
 
-    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+    with http_server(Handler) as server:
+        yield f"http://127.0.0.1:{server.server_port}"
+
+
+@contextlib.contextmanager
+def http_server(handler, context=None):
+    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        if context is not None:
+            server.socket = context.wrap_socket(server.socket, server_side=True)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
-            yield f"http://127.0.0.1:{server.server_port}"
+            yield server
         finally:
             server.shutdown()
             thread.join(timeout=4)
@@ -264,12 +274,59 @@ def continuous_worker(lab):
     print("PASS: independent sampling and automatic retry while the controller is stopped and restarted")
 
 
+def verified_https(lab):
+    cert = lab.directory / "local-test-ca.pem"
+    key = lab.directory / "local-test-key.pem"
+    subprocess.run([
+        "openssl", "req", "-x509", "-newkey", "rsa:2048", "-noenc", "-days", "1",
+        "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1",
+        "-keyout", key, "-out", cert,
+    ], check=True, capture_output=True, timeout=10)
+
+    class Proxy(BaseHTTPRequestHandler):
+        def do_GET(self):
+            status, record = send(
+                lab.port, "GET", self.path,
+                token=self.headers.get("Authorization", "").removeprefix("Bearer "),
+            )
+            data = json.dumps(record).encode() if record is not None else b""
+            self.send_response(status)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def log_message(self, *_):
+            pass
+
+    # Linux's native MoonBit TLS backend uses the system roots via OpenSSL.
+    # Scope the added root to the child process; don't change the host trust store.
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(cert, key)
+    trust = {**os.environ, "SSL_CERT_FILE": str(cert)}
+    lab.run("controller", "submit", lab.controller, NODE_ID, "tls-1", "health-check")
+    with lab.serve(), http_server(Proxy, context) as server:
+        origin = f"https://127.0.0.1:{server.server_port}"
+        assert lab.sync(origin)["transport_deferred"]  # Certificate is untrusted.
+        assert lab.sync(f"https://localhost:{server.server_port}", env=trust)["transport_deferred"]
+        assert lab.node_status()["inbox"] is None  # A matching root alone is not enough.
+        assert lab.sync(origin, env=trust)["task_accepted"]
+        assert lab.node_status()["inbox"]["task_id"] == "tls-1"
+    print("PASS: node accepts a trusted HTTPS controller and rejects unknown roots and mismatched hosts")
+
+
 def main():
-    if len(sys.argv) < 2:
+    arguments = sys.argv[1:]
+    tls = bool(arguments and arguments[0] == "--native-tls")
+    if tls:
+        arguments = arguments[1:]
+    if not arguments:
         raise SystemExit("usage: python3 tests/e2e.py EDGEHPC_EXECUTABLE [EXECUTABLE_PREFIX_ARGS...]")
-    for regression in (restart_and_replay, continuous_worker):
+    checks = [restart_and_replay, continuous_worker]
+    if tls:
+        checks.append(verified_https)
+    for regression in checks:
         with tempfile.TemporaryDirectory(prefix="edgehpc-e2e-") as path:
-            lab = Lab(Path(path), sys.argv[1:])
+            lab = Lab(Path(path), arguments)
             try:
                 regression(lab)
             except Exception:
