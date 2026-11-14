@@ -154,6 +154,7 @@ pub async fn submit(root : String, task : @model.Task) -> Json {
     let state = dir.load_state()
     for job in state.jobs {
       if job.task.id == task.id && job.task.node_id == task.node_id {
+        dir.sync()
         return job.status()
       }
     }
@@ -199,6 +200,9 @@ pub async fn receive(
         for stored in state.alerts {
           if stored.id == alert.id {
             guard stored.payload() == alert.payload() else { raise Conflict }
+            // A previous rename can be visible even if its directory sync
+            // failed. Retry the sync before acknowledging the same record.
+            dir.sync()
             return @model.acknowledgement(alert.id)
           }
         }
@@ -216,6 +220,7 @@ pub async fn receive(
             found = true
             if job.result is Some(stored) {
               guard stored.payload() == result.payload() else { raise Conflict }
+              dir.sync()
             } else {
               state.jobs[index] = { ..job, result: Some(result), }
               dir.save_state(state)
