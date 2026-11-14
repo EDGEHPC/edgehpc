@@ -16,6 +16,14 @@ pub fn parse_policy(StringView) -> Policy raise
 
 pub fn parse_snapshot(StringView) -> Snapshot raise
 
+pub fn parse_task(StringView) -> Task raise
+
+pub fn parse_task_result(StringView) -> TaskResult raise
+
+pub fn task_from_json(@json.Json) -> Task raise
+
+pub fn task_result_from_json(@json.Json) -> TaskResult raise
+
 pub fn verify_acknowledgement(StringView, String) -> Unit raise
 
 // Errors
@@ -30,6 +38,11 @@ pub suberror ProtocolError {
 
 pub suberror SnapshotError {
   InvalidSnapshot(String)
+}
+
+pub suberror TaskError {
+  InvalidTask
+  InvalidResult
 }
 
 // Types and methods
@@ -114,6 +127,26 @@ pub(all) struct Snapshot {
   temperatures : Map[String, Int64]
   data_available_bytes : Int64?
 }
+
+pub struct Task {
+  id : String
+  node_id : String
+}
+pub fn Task::execute(Self, Snapshot?, Int64) -> TaskResult
+pub fn Task::health_check(String, String) -> Self raise
+pub fn Task::payload(Self) -> @json.Json
+
+pub struct TaskResult {
+  task_id : String
+  node_id : String
+  successful : Bool
+  sample : Cursor?
+  collected_at_ms : Int64?
+  finished_at_ms : Int64
+  readings : @json.Json
+}
+pub fn TaskResult::delivery_id(Self) -> String
+pub fn TaskResult::payload(Self) -> @json.Json
 
 // Type aliases
 
