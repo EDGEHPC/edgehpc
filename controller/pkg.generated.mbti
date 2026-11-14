@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "edgehpc/edgehpc/controller"
+
+import {
+  "edgehpc/edgehpc",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub async fn pull(String, String) -> @edgehpc.Task?
+
+pub async fn receive(String, String, @edgehpc.Delivery) -> @json.Json
+
+pub async fn status(String, node_id? : String) -> @json.Json
+
+pub async fn submit(String, @edgehpc.Task) -> @json.Json
+
+// Errors
+pub suberror ControllerError {
+  InvalidState
+  Conflict
+  UnknownTask
+  CapacityReached
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits
