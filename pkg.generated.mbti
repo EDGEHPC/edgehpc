@@ -8,7 +8,11 @@ import {
 // Values
 pub fn acknowledgement(String) -> @json.Json
 
+pub fn delivery_from_json(@json.Json) -> Delivery raise
+
 pub fn inspect_snapshot(StringView) -> @json.Json raise
+
+pub fn parse_delivery(StringView) -> Delivery raise
 
 pub fn parse_event(StringView) -> Event raise
 
@@ -55,6 +59,14 @@ pub fn Cursor::equal(Self, Self) -> Bool
 pub fn Cursor::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn Cursor::not_equal(Self, Self) -> Bool
 pub fn Cursor::to_json(Self) -> @json.Json
+
+pub(all) enum Delivery {
+  Alert(Event)
+  Result(TaskResult)
+}
+pub fn Delivery::id(Self) -> String
+pub fn Delivery::node_id(Self) -> String
+pub fn Delivery::payload(Self) -> @json.Json
 
 pub struct Event {
   id : String
