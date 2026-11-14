@@ -45,7 +45,7 @@ jobs:
       - name: Check formatting and run tests
         run: |
           moon fmt --check
-          moon check
+          moon check -d
           moon test
           moon test --target native
       - name: Smoke-test the native CLI
@@ -61,3 +61,7 @@ jobs:
           test ! -s "$RUNNER_TEMP/edgehpc-invalid.json"
           moon run --target native cmd/edgehpc -- inspect fixtures/health-v1.json > "$RUNNER_TEMP/edgehpc-inspect.json"
           diff -u fixtures/inspect-expected.json "$RUNNER_TEMP/edgehpc-inspect.json"
+      - name: Verify offline execution and acknowledged replay
+        run: |
+          moon build --target native cmd/edgehpc
+          python3 tests/e2e.py "$PWD/_build/native/debug/build/cmd/edgehpc/edgehpc.exe"
