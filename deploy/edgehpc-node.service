@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=EdgeHPC local tasks and offline telemetry
+After=armhpc-health.timer
+Wants=armhpc-health.timer
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=edgehpc
+Group=edgehpc
+StateDirectory=edgehpc
+StateDirectoryMode=0700
+UMask=0077
+EnvironmentFile=/etc/edgehpc/node.env
+LoadCredential=node-token:/etc/edgehpc/node-token
+ExecStart=/usr/local/bin/edgehpc node run /var/lib/edgehpc /etc/edgehpc/policy.json /run/edgehpc-input/health.json ${CONTROLLER_ORIGIN} ${CREDENTIALS_DIRECTORY}/node-token
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

@@ -65,3 +65,5 @@ jobs:
         run: |
           moon build --target native cmd/edgehpc
           python3 tests/e2e.py --native-tls "$PWD/_build/native/debug/build/cmd/edgehpc/edgehpc.exe"
+      - name: Verify the ARMHPC snapshot exporter
+        run: python3 deploy/test_export.py
