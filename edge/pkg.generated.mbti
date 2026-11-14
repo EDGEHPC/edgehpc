@@ -15,7 +15,13 @@ pub async fn confirm(String, String, String) -> Bool
 
 pub async fn next_delivery(String, String) -> @edgehpc.Delivery?
 
+pub async fn pull_work(String, String, async () -> @edgehpc.Task?) -> (Bool, Bool)
+
+pub async fn replay(String, String, async (@edgehpc.Delivery) -> Unit, max_records? : Int32) -> Replay
+
 pub async fn status(String, String) -> @json.Json
+
+pub async fn synchronize(String, String, async () -> @edgehpc.Task?, async (@edgehpc.Delivery) -> Unit) -> Sync
 
 pub async fn tick(String, @edgehpc.Policy, @edgehpc.Snapshot?, Int64) -> Tick
 
@@ -28,6 +34,17 @@ pub suberror EdgeError {
 }
 
 // Types and methods
+pub(all) struct Replay {
+  acknowledged : Int32
+  deferred : Bool
+}
+
+pub(all) struct Sync {
+  acknowledged : Int32
+  task_accepted : Bool
+  transport_deferred : Bool
+}
+
 pub(all) struct Tick {
   alerts : Int32
   task_completed : Bool
