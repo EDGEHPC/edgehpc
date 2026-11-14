@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "node_id": "lab-a",
+  "queue_capacity": 128,
+  "rules": [
+    {
+      "id": "soc-hot",
+      "metric": "temperature_millicelsius",
+      "sensor": "thermal_zone0",
+      "threshold": 80000,
+      "consecutive": 3,
+      "max_gap_seconds": 120
+    },
+    {
+      "id": "data-low",
+      "metric": "data_available_bytes",
+      "threshold": 1073741824,
+      "consecutive": 2,
+      "max_gap_seconds": 120
+    }
+  ]
+}
