@@ -1,0 +1,19 @@
+name: Bug report / 缺陷报告
+description: Report a reproducible EdgeHPC CLI or library problem.
+labels:
+  - bug
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: EdgeHPC revision, MoonBit version, OS and CPU architecture.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include command, expected and actual output, and a synthetic or redacted snapshot.
+    validations:
+      required: true

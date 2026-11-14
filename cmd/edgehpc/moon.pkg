@@ -1,0 +1,13 @@
+import {
+  "edgehpc/edgehpc" @health,
+  "moonbitlang/core/async",
+  "moonbitlang/core/async/fs",
+  "moonbitlang/core/async/stdio",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")
+
+options(
+  "allow-experimental-packages": true,
+)

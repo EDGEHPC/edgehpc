@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: GPL-2.0-only
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  moonbit:
+    name: MoonBit (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned MoonBit toolchain
+        run: |
+          moon_home="$RUNNER_TEMP/edgehpc-moon"
+          bash tools/setup-moonbit.sh "$moon_home"
+          echo "MOON_HOME=$moon_home" >> "$GITHUB_ENV"
+          echo "$moon_home/bin" >> "$GITHUB_PATH"
+      - name: Prepare standard library
+        run: |
+          moon version --all
+          moon -C "$MOON_HOME/lib/core" bundle --warn-list -a --target wasm
+          moon -C "$MOON_HOME/lib/core" bundle --warn-list -a --target native
+      - name: Check formatting and run tests
+        run: |
+          moon fmt --check
+          moon check
+          moon test
+          moon test --target native
+      - name: Smoke-test the native CLI
+        run: |
+          set +e
+          moon run --target native cmd/edgehpc -- inspect fixtures/inspect-expected.json > "$RUNNER_TEMP/edgehpc-invalid.json"
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "Expected exit 1 for an invalid snapshot; got $code" >&2
+            exit 1
+          fi
+          test ! -s "$RUNNER_TEMP/edgehpc-invalid.json"
+          moon run --target native cmd/edgehpc -- inspect fixtures/health-v1.json > "$RUNNER_TEMP/edgehpc-inspect.json"
+          diff -u fixtures/inspect-expected.json "$RUNNER_TEMP/edgehpc-inspect.json"

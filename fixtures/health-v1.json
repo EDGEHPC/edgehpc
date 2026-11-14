@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "thermal": {
+    "thermal_zone0": {
+      "type": "soc",
+      "temperature_millicelsius": "42000"
+    }
+  },
+  "DATA": {
+    "available_bytes": 2147483648
+  }
+}
